@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="viewport"
+        content="width = device-width, initial-scale = 1.0, minimum-scale = 1, maximum-scale = 1, user-scalable = no, viewport-fit=cover,minimal-ui" />
+    <title></title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <script>
+        var gameWidth = 768, gameHeight = 1280;
+        var txtEnding, txtScore, btnReturn, stageText;
+        var currentScene, clickButton;
+        var remainTime;
+        var player;
+        var nGameSate = -1;//-1 preGame, 0=Gaming, 1=gameEnd
+        var cursors, upButton, pointer;
+        var flipflopButton = true;
+        var cntTime = 0;
+        var pipeMakeCnt = 0;
+        var scoreMeter = 0;
+
+        var playerGroup;
+        var pipeGroup;
+        var pointGroup;
+        var groundGroup;
+
+        function makeUpperPipeObject(scene, x, y) {
+            var obj = currentScene.add.rectangle(
+                x, y / 2,
+                50, y, 0x3cb371);
+            obj.setDepth(1);
+            pipeGroup.add(obj);
+        }
+
+        function makeUnderPipeObject(scene, x, y) {
+            var obj = currentScene.add.rectangle(
+                x, (gameHeight - y) / 2 + y,
+                50, (gameHeight - y), 0x3cb371);
+            obj.setDepth(1);
+            pipeGroup.add(obj);
+        }
+
+        function deadBird() {
+            nGameSate = 2;//GAME END
+            drawGameOver();
+        }
+
+        function drawGameOver() {
+            player.doDestroy();
+            txtEnding.setDepth(30);
+            txtEnding.text = "GAME OVER..";
+            btnReturn = currentScene.add
+                .text(gameWidth / 2 - 300, 800, " RESTART ")
+                .setScrollFactor(0)
+                .setFontSize(100)
+                .setColor("#ff0")
+                .setBackgroundColor("#aa5500")
+                .setInteractive();
+            btnReturn.on(
+                "pointerdown",
+                () => {
+                    currentScene.scene.start("intervalGameScene");
+                },
+                this);
+            btnReturn.visible = true;
+            btnReturn.setDepth(30);
+        }
+
+        function preGameUI() {
+            txtEnding = currentScene.add
+                .text(100, 600, "START TO CLICK")
+                .setScrollFactor(0)
+                .setFontSize(70)
+                .setColor("#ff0");
+
+            txtScore = currentScene.add
+                .text(100, 50, "METER:0m")
+                .setScrollFactor(0)
+                .setFontSize(40)
+                .setColor("#ff0");
+            txtScore.setDepth(100);
+
+        }
+
+
+
+        function initScene() {
+            var bg = currentScene.add
+                .tileSprite(0, 0, gameWidth, gameHeight, "bg001")
+                .setOrigin(0)
+                .setScale(2.0)
+                .setScrollFactor(0);
+
+            playerGroup = currentScene.physics.add.group();
+            pipeGroup = currentScene.physics.add.group();
+            pointGroup = currentScene.physics.add.staticGroup();
+            groundGroup = currentScene.physics.add.staticGroup();
+
+
+            var rect = currentScene.add.rectangle(
+                gameWidth / 2, 1220,
+                gameWidth, 100, 0x8b4513);
+            groundGroup.add(rect);
+
+            player = new playerSprite(currentScene, 300, 300);
+            playerGroup.add(player);
+
+            upButton = currentScene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+            cursors = currentScene.input.keyboard.createCursorKeys();
+            pointer = currentScene.input.activePointer;
+
+            currentScene.physics.add.overlap(playerGroup, groundGroup, deadBird);
+            currentScene.physics.add.overlap(playerGroup, pipeGroup, deadBird);
+
+
+            //            var obj = currentScene.add.rectangle(
+            //                600, 300 / 2,
+            //                30, 300, 0x3cb371);
+
+        }
+
+
+
+        class playerSprite extends Phaser.Physics.Arcade.Sprite {
+            constructor(scene, x, y) {
+                super(scene, x, y);
+                this.setTexture("player");
+                this.setPosition(x, y);
+                scene.add.existing(this);
+                playerGroup.add(this);
+                this.setCircle(40);//Change Hit Area Rectangle -> Circle
+                this.currentScale = 1.0;
+                this.currentAlpha = 1.0;
+                this.setMass(9999);
+
+            }
+            doDestroy() {
+                if (this) {
+                    this.destroy();
+                }
+            }
+        }
+
+
+
+
+        class gameScene extends Phaser.Scene {
+            constructor() {
+                super({ key: "gameScene", active: true });
+            }
+            preload() {
+                this.load.image("bg001", "./bg.png");
+                this.load.image("player", "./bird.png");
+            }
+            create() {
+                cntTime = 0;
+                pipeMakeCnt = 0;
+                nGameSate = -1;
+                scoreMeter = 0;
+                currentScene = this;
+                initScene();
+                preGameUI();
+
+
+                //new upperPipeObject(currentScene, 300,300);
+            }
+
+            update() {
+                if (nGameSate == 0) {//GAMING
+                    if (pointer.leftButtonDown() && flipflopButton) {
+                        if (player) {
+                            player.setVelocityY(-400);
+                        }
+                        flipflopButton = false;
+                    } else if (!pointer.leftButtonDown()) {
+                        flipflopButton = true;
+                    }
+                    pipeMakeCnt = (pipeMakeCnt + 1) % 120;
+                    if (pipeMakeCnt == 0) {
+                        var min = 100;
+                        var max = 500;
+                        var topPosY = Math.floor(Math.random() * (max + 1 - min)) + min;
+                        makeUpperPipeObject(currentScene, gameWidth, topPosY);
+                        makeUnderPipeObject(currentScene, gameWidth, topPosY + 300);
+                    }
+                    cntTime = (cntTime + 1) % 2;
+                    if (cntTime == 0) {
+                        console.log("MOVE");
+
+                        scoreMeter = scoreMeter + 5;
+                        txtScore.text = "METER:" + Math.floor(scoreMeter / 100) + "m";
+                        pipeGroup.children.iterate(function (child) {
+                            if (child == undefined) {
+                            } else {
+                                if (child.x < -50) {
+                                    child.destroy();
+                                }
+                                else {
+                                    child.x = child.x - 5;
+                                    //                                    child.setVelocityX(-10);
+                                }
+                            }
+                        });
+                        //                       for(var i = 0; i < pipeGroup.length; i++){
+                        //                        pipeGroup[i].x = pipeGroup[i].x - 20;
+                        //                       }
+
+                    }
+                } else if (nGameSate == -1) {
+                    if (pointer.leftButtonDown()) {
+                        nGameSate = 0;
+                        txtEnding.text = "";
+                        player.setGravityY(800);
+                    }
+                }
+            }
+        }
+
+
+        class intervalGameScene extends Phaser.Scene {
+            constructor() {
+                super({ key: "intervalGameScene", active: false });
+            }
+            preload() { }
+            create() {
+                currentScene = this;
+                var bgRect = currentScene.add.rectangle(0, 0, gameWidth, gameHeight, "0x123456").setOrigin(0);
+                remainTime = 30;
+            }
+            update() {
+                remainTime = remainTime - 1;
+                if (remainTime < 0) {
+                    this.scene.start("gameScene");
+                }
+
+            }
+        }
+
+        var config = {
+            type: Phaser.AUTO,
+            width: gameWidth,
+            height: gameHeight,
+            backgroundColor: "#eaffff",
+            autoResize: true,
+            physics: {
+                default: "arcade",
+                arcade: {
+                    gravity: {
+                        y: 0
+                    },
+                    debug: true
+                }
+            }, scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            },
+            scene: [gameScene, intervalGameScene]
+        };
+        var game = new Phaser.Game(config);
+    </script>
+</body>
+
+</html>
