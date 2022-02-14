@@ -15,12 +15,12 @@
 <body>
     <script>
         var gameWidth = 768, gameHeight = 1280;
-        var txtEnding, txtScore, btnReturn, stageText;
+        var txtEnding, txtScore, btnReturn;
         var currentScene, clickButton;
         var remainTime;
         var player;
         var nGameSate = -1;//-1 preGame, 0=Gaming, 1=gameEnd
-        var cursors, upButton, pointer;
+        var pointer;
         var flipflopButton = true;
         var cntTime = 0;
         var pipeMakeCnt = 0;
@@ -28,7 +28,6 @@
 
         var playerGroup;
         var pipeGroup;
-        var pointGroup;
         var groundGroup;
 
         function makeUpperPipeObject(scene, x, y) {
@@ -100,10 +99,9 @@
 
             playerGroup = currentScene.physics.add.group();
             pipeGroup = currentScene.physics.add.group();
-            pointGroup = currentScene.physics.add.staticGroup();
             groundGroup = currentScene.physics.add.staticGroup();
 
-
+            //Ground
             var rect = currentScene.add.rectangle(
                 gameWidth / 2, 1220,
                 gameWidth, 100, 0x8b4513);
@@ -112,18 +110,10 @@
             player = new playerSprite(currentScene, 300, 300);
             playerGroup.add(player);
 
-            upButton = currentScene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
-            cursors = currentScene.input.keyboard.createCursorKeys();
             pointer = currentScene.input.activePointer;
 
             currentScene.physics.add.overlap(playerGroup, groundGroup, deadBird);
             currentScene.physics.add.overlap(playerGroup, pipeGroup, deadBird);
-
-
-            //            var obj = currentScene.add.rectangle(
-            //                600, 300 / 2,
-            //                30, 300, 0x3cb371);
-
         }
 
 
@@ -167,9 +157,6 @@
                 currentScene = this;
                 initScene();
                 preGameUI();
-
-
-                //new upperPipeObject(currentScene, 300,300);
             }
 
             update() {
@@ -192,8 +179,6 @@
                     }
                     cntTime = (cntTime + 1) % 2;
                     if (cntTime == 0) {
-                        console.log("MOVE");
-
                         scoreMeter = scoreMeter + 5;
                         txtScore.text = "METER:" + Math.floor(scoreMeter / 100) + "m";
                         pipeGroup.children.iterate(function (child) {
@@ -204,14 +189,9 @@
                                 }
                                 else {
                                     child.x = child.x - 5;
-                                    //                                    child.setVelocityX(-10);
                                 }
                             }
                         });
-                        //                       for(var i = 0; i < pipeGroup.length; i++){
-                        //                        pipeGroup[i].x = pipeGroup[i].x - 20;
-                        //                       }
-
                     }
                 } else if (nGameSate == -1) {
                     if (pointer.leftButtonDown()) {
