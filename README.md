@@ -20,14 +20,11 @@ Phaser3.jsを使ってHTML5のゲームを作るときに参考にしてもら�
 
 * npmを利用しないパターンでのPhaser3.jsのプログラミングが学べる
 * スマホの画面サイズでゲームを作る方法を学べる
-* スマホでの音声再生の方法が学べる(Howler.js利用)
-* 物理エンジンmatter.jsでの当たり判定や、弾の射出方法計算などが学べる
+* 物理エンジンArcadeでの当たり判定や、重力制御などが学べる
 
 # Requirement
  
 * Phase3.js      - 3.55.2
-* Howler.js      - 2.2.3
-* matter.js      - 0.17.1
 * localforage.js - 1.10.0
  
 # Note
