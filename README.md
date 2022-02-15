@@ -12,6 +12,7 @@ Phaser3.jsを使ってHTML5のゲームを作るときに参考にしてもら�
 以下のアドレスでプレイすることができます。
 
 [FlappyBirdClone](https://tinycore-hisanori.github.io/phaser3_SimpleflappyBird/)
+![debfc8b2e017990e539e8340e690c4980515e191](https://user-images.githubusercontent.com/30931098/153978223-d6868d19-eada-4348-b4bb-34766fd418c5.png)
 
 
 # Features

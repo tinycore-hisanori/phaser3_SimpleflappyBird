@@ -30,22 +30,27 @@
         var pipeGroup;
         var groundGroup;
 
-        var currentHiScore = 0;
-        var touchEvent = false;
+        function makeUpperPipe(scene, x, y) {
+            var obj = currentScene.add.rectangle(
+                x, y / 2,
+                50, y, 0x3cb371);
+            obj.setDepth(1);
+            pipeGroup.add(obj);
+        }
+
+        function makeUnderPipe(scene, x, y) {
+            var obj = currentScene.add.rectangle(
+                x, (gameHeight - y) / 2 + y,
+                50, (gameHeight - y), 0x3cb371);
+            obj.setDepth(1);
+            pipeGroup.add(obj);
+        }
 
         function deadBird() {
-
-            var txt = "GAME OVER..";
-            if (currentHiScore < Math.floor(scoreMeter / 100)) {
-                txt = "GAME OVER..\r\nHigh Score!";
-                currentHiScore = Math.floor(scoreMeter / 100);
-                localforage.setItem("unique3421_flappyScore", currentHiScore);
-            }
-
             nGameSate = 2;//GAME END
             player.destroy();
             txtEnding.setDepth(30);
-            txtEnding.text = txt;
+            txtEnding.text = "GAME OVER..";
             btnReturn = currentScene.add
                 .text(gameWidth / 2 - 300, 800, " RESTART ")
                 .setScrollFactor(0)
@@ -63,21 +68,29 @@
             btnReturn.setDepth(30);
         }
 
-        function makeUpperPipe(scene, x, y) {
-            var obj = currentScene.add.rectangle(
-                x, y / 2,
-                100, y, 0x3cb371);
-            obj.setDepth(1);
-            pipeGroup.add(obj);
+
+
+        class playerSprite extends Phaser.Physics.Arcade.Sprite {
+            constructor(scene, x, y) {
+                super(scene, x, y);
+                this.setTexture("player");
+                this.setPosition(x, y);
+                scene.add.existing(this);
+                playerGroup.add(this);
+                this.setCircle(40);//Change Hit Area Rectangle -> Circle
+                this.currentScale = 1.0;
+                this.currentAlpha = 1.0;
+                this.setMass(9999);
+
+            }
+            doDestroy() {
+                if (this) {
+                    this.destroy();
+                }
+            }
         }
 
-        function makeUnderPipe(scene, x, y) {
-            var obj = currentScene.add.rectangle(
-                x, (gameHeight - y) / 2 + y,
-                100, (gameHeight - y), 0x3cb371);
-            obj.setDepth(1);
-            pipeGroup.add(obj);
-        }
+
 
 
         class gameScene extends Phaser.Scene {
@@ -100,13 +113,10 @@
                 pipeMakeCnt = 0;
                 nGameSate = -1;
                 scoreMeter = 0;
-                flipflopButton = true;
-
                 playerGroup = currentScene.physics.add.group();
                 pipeGroup = currentScene.physics.add.group();
                 groundGroup = currentScene.physics.add.staticGroup();
                 pointer = currentScene.input.activePointer;
-                touchEvent = false;
 
                 //Ground
                 var rect = currentScene.add.rectangle(
@@ -122,8 +132,10 @@
                 player.currentAlpha = 1.0;
                 player.setMass(9999);
 
+
                 currentScene.physics.add.overlap(playerGroup, groundGroup, deadBird);
                 currentScene.physics.add.overlap(playerGroup, pipeGroup, deadBird);
+
 
                 txtEnding = currentScene.add
                     .text(100, 600, "START TO CLICK")
@@ -138,47 +150,24 @@
                     .setColor("#ff0");
                 txtScore.setDepth(100);
 
-
-                localforage.getItem("unique3421_flappyScore", function (err, value) {
-                    if (value != null) {
-                        currentHiScore = value;
-                        txtEnding.text = "START TO CLICK\r\n(HighScore " + currentHiScore + ")";
-                    } else {
-                        currentHiScore = 0;
-                    }
-                });
-
-
-                currentScene.input.on('pointerdown', function (pointer) {
-                    if (flipflopButton == true) {
-                        touchEvent = true;
-                        flipflopButton = false;
-                    }
-                });
-                currentScene.input.on('pointerup', function (pointer) {
-                    flipflopButton = true;
-                });
-                currentScene.input.on('pointerout', function (pointer) {
-                    touchEvent = false;
-                    flipflopButton = true;
-                });
-
             }
+
             update() {
-                if (nGameSate == -1) {//PRE GAME
-                    if (touchEvent) {
-                        touchEvent = false;
+                if (nGameSate == -1) {
+                    if (pointer.leftButtonDown()) {
                         nGameSate = 0;
                         txtEnding.text = "";
                         player.setGravityY(800);
                     }
-                } else if (nGameSate == 0) {//GAMEING
-                    if (touchEvent && flipflopButton) {
-                        touchEvent = false;
-                        //                       if (pointer.leftButtonDown()) {
+                }
+                else if (nGameSate == 0) {//GAMING
+                    if (pointer.leftButtonDown() && flipflopButton) {
                         if (player) {
                             player.setVelocityY(-400);
                         }
+                        flipflopButton = false;
+                    } else if (!pointer.leftButtonDown()) {
+                        flipflopButton = true;
                     }
                     pipeMakeCnt = (pipeMakeCnt + 1) % 120;
                     if (pipeMakeCnt == 0) {
@@ -204,15 +193,16 @@
                             }
                         });
                     }
-
                 }
-
             }
         }
+
+
         class intervalGameScene extends Phaser.Scene {
             constructor() {
                 super({ key: "intervalGameScene", active: false });
             }
+            preload() { }
             create() {
                 currentScene = this;
                 var bgRect = currentScene.add.rectangle(0, 0, gameWidth, gameHeight, "0x123456").setOrigin(0);
